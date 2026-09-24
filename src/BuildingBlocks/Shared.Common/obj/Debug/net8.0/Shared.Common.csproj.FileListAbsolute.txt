@@ -1,0 +1,12 @@
+C:\Users\juani\OneDrive\Escritorio\ProyectoAgiles\src\BuildingBlocks\Shared.Common\bin\Debug\net8.0\Shared.Common.deps.json
+C:\Users\juani\OneDrive\Escritorio\ProyectoAgiles\src\BuildingBlocks\Shared.Common\bin\Debug\net8.0\Shared.Common.dll
+C:\Users\juani\OneDrive\Escritorio\ProyectoAgiles\src\BuildingBlocks\Shared.Common\bin\Debug\net8.0\Shared.Common.pdb
+C:\Users\juani\OneDrive\Escritorio\ProyectoAgiles\src\BuildingBlocks\Shared.Common\obj\Debug\net8.0\Shared.Common.csproj.AssemblyReference.cache
+C:\Users\juani\OneDrive\Escritorio\ProyectoAgiles\src\BuildingBlocks\Shared.Common\obj\Debug\net8.0\Shared.Common.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\juani\OneDrive\Escritorio\ProyectoAgiles\src\BuildingBlocks\Shared.Common\obj\Debug\net8.0\Shared.Common.AssemblyInfoInputs.cache
+C:\Users\juani\OneDrive\Escritorio\ProyectoAgiles\src\BuildingBlocks\Shared.Common\obj\Debug\net8.0\Shared.Common.AssemblyInfo.cs
+C:\Users\juani\OneDrive\Escritorio\ProyectoAgiles\src\BuildingBlocks\Shared.Common\obj\Debug\net8.0\Shared.Common.csproj.CoreCompileInputs.cache
+C:\Users\juani\OneDrive\Escritorio\ProyectoAgiles\src\BuildingBlocks\Shared.Common\obj\Debug\net8.0\Shared.Common.dll
+C:\Users\juani\OneDrive\Escritorio\ProyectoAgiles\src\BuildingBlocks\Shared.Common\obj\Debug\net8.0\refint\Shared.Common.dll
+C:\Users\juani\OneDrive\Escritorio\ProyectoAgiles\src\BuildingBlocks\Shared.Common\obj\Debug\net8.0\Shared.Common.pdb
+C:\Users\juani\OneDrive\Escritorio\ProyectoAgiles\src\BuildingBlocks\Shared.Common\obj\Debug\net8.0\ref\Shared.Common.dll

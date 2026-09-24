@@ -1,0 +1,19 @@
+[
+  {
+    "Name": "Nuevo perfil",
+    "Projects": [
+      {
+        "Path": "src\\Services\\Auth.Service\\Auth.Api\\Auth.Api.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "src\\Services\\CreditSimulator.Service\\CreditSimulator.Api\\CreditSimulator.Api.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "src\\ApiGateway\\ApiGateway.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

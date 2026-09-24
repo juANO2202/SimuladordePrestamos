@@ -1,0 +1,522 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Simulador de Préstamos - Credit Simulator API",
+    "version": "v1"
+  },
+  "paths": {
+    "/api/simulator/credit-types": {
+      "get": {
+        "tags": [
+          "Simulator"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditTypeOptionDtoListApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditTypeOptionDtoListApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditTypeOptionDtoListApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/simulator/calculate": {
+      "post": {
+        "tags": [
+          "Simulator"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalculateCreditRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalculateCreditRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalculateCreditRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalculateCreditResponseDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalculateCreditResponseDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalculateCreditResponseDtoApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalculateCreditResponseDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalculateCreditResponseDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalculateCreditResponseDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/simulator/history": {
+      "get": {
+        "tags": [
+          "Simulator"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationRecordListApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationRecordListApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationRecordListApiResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AmortizationMethodEnum": {
+        "enum": [
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "AmortizationRowDto": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "initialBalance": {
+            "type": "number",
+            "format": "double"
+          },
+          "capitalPaid": {
+            "type": "number",
+            "format": "double"
+          },
+          "interestPaid": {
+            "type": "number",
+            "format": "double"
+          },
+          "desgravamen": {
+            "type": "number",
+            "format": "double"
+          },
+          "payment": {
+            "type": "number",
+            "format": "double"
+          },
+          "remainingBalance": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CalculateCreditRequestDto": {
+        "required": [
+          "creditType",
+          "method"
+        ],
+        "type": "object",
+        "properties": {
+          "creditType": {
+            "$ref": "#/components/schemas/CreditTypeEnum"
+          },
+          "amount": {
+            "maximum": 1000000,
+            "minimum": 50,
+            "type": "number",
+            "format": "double"
+          },
+          "termMonths": {
+            "maximum": 360,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          },
+          "method": {
+            "$ref": "#/components/schemas/AmortizationMethodEnum"
+          },
+          "periodicity": {
+            "type": "string",
+            "nullable": true
+          },
+          "institutionType": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CalculateCreditResponseDto": {
+        "type": "object",
+        "properties": {
+          "creditTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "amortizationMethodName": {
+            "type": "string",
+            "nullable": true
+          },
+          "periodicity": {
+            "type": "string",
+            "nullable": true
+          },
+          "institutionType": {
+            "type": "string",
+            "nullable": true
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "termMonths": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "annualInterestRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "monthlyInterestRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "monthlyDesgravamenRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "initialMonthlyPayment": {
+            "type": "number",
+            "format": "double"
+          },
+          "finalMonthlyPayment": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalInterest": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalDesgravamen": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalAmountPaid": {
+            "type": "number",
+            "format": "double"
+          },
+          "schedule": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AmortizationRowDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CalculateCreditResponseDtoApiResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/CalculateCreditResponseDto"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreditTypeEnum": {
+        "enum": [
+          1,
+          2,
+          3
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "CreditTypeOptionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "annualInterestRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "minMonths": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxMonths": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "maxAmount": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreditTypeOptionDtoListApiResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreditTypeOptionDto"
+            },
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": { }
+      },
+      "SimulationRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "username": {
+            "type": "string",
+            "nullable": true
+          },
+          "creditTypeCode": {
+            "$ref": "#/components/schemas/CreditTypeEnum"
+          },
+          "method": {
+            "$ref": "#/components/schemas/AmortizationMethodEnum"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "termMonths": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "annualInterestRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "initialMonthlyPayment": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalInterest": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalAmountPaid": {
+            "type": "number",
+            "format": "double"
+          },
+          "simulatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SimulationRecordListApiResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimulationRecord"
+            },
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "apiKey",
+        "description": "Encabezado de autorización JWT usando el esquema Bearer. Ejemplo: \"Bearer {token}\"",
+        "name": "Authorization",
+        "in": "header"
+      }
+    }
+  },
+  "security": [
+    {
+      "Bearer": [ ]
+    }
+  ]
+}
