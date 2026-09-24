@@ -1,15 +1,37 @@
+// ====================================================================================================
+// PROYECTO UNIVERSITARIO: SIMULADOR DE PRÉSTAMOS / CRÉDITOS BANCARIOS (COMPONENTES REUTILIZABLES)
+// INTEGRANTE / EXPOSITOR: Estudiante de Ingeniería de Software / Sistemas
+// MATERIA: Interfaces de Usuario (UI/UX) / Desarrollo Web Frontend React
+// ====================================================================================================
+// ARCHIVO: AmortizationTable.jsx
+// PROPÓSITO: Componente React encargado de renderizar la Tabla de Amortización Oficial celda a celda.
+//            Incluye desgloses de:
+//            - No. Cuota (mes k)
+//            - Saldo Inicial Deudor
+//            - Abonado a Capital
+//            - Interés Generado
+//            - Seguro de Desgravamen
+//            - Cuota Total a pagar en la ventanilla del banco
+//            - Saldo Final Remanente
+//            Incluye además Paginado Frontend (12 filas por página) para mantener un diseño limpio y responsivo.
+// ====================================================================================================
+
 import React, { useState } from 'react';
 import { generateCreditPdf } from '../utils/pdfGenerator';
 import { Download, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const AmortizationTable = ({ simulation, userName }) => {
+  // Estado para la paginación local de la tabla
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 12;
+  const rowsPerPage = 12; // Cantidad de filas visibles por página
 
   if (!simulation || !simulation.schedule || simulation.schedule.length === 0) {
     return null;
   }
 
+  // --------------------------------------------------------------------------------------------------
+  // LÓGICA DE PAGINACIÓN LOCAL (ARRAY SLICING)
+  // --------------------------------------------------------------------------------------------------
   const totalPages = Math.ceil(simulation.schedule.length / rowsPerPage);
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
@@ -21,7 +43,7 @@ export const AmortizationTable = ({ simulation, userName }) => {
 
   return (
     <div className="card animate-fade-in" style={{ padding: '1.75rem', background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-      {/* Header Bar */}
+      {/* Header Bar con título del cronograma y badge de total de cuotas */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
         <div>
           <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
@@ -46,7 +68,7 @@ export const AmortizationTable = ({ simulation, userName }) => {
         </span>
       </div>
 
-      {/* Tabla HTML (7 Columnas exactas de la imagen) */}
+      {/* TABLA HTML ESTRUCTURADA (7 COLUMNAS FINANCIERAS) */}
       <div className="table-container" style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
         <table className="custom-table" style={{ fontSize: '0.85rem', width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -88,7 +110,7 @@ export const AmortizationTable = ({ simulation, userName }) => {
         </table>
       </div>
 
-      {/* Paginador */}
+      {/* PIE DE TABLA: CONTROLES DE PAGINACIÓN */}
       {totalPages > 1 && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.25rem' }}>
           <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
