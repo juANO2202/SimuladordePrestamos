@@ -1,14 +1,3 @@
-// ====================================================================================================
-// PROYECTO UNIVERSITARIO: SIMULADOR DE PRÉSTAMOS / CRÉDITOS BANCARIOS (MICROSERVICIOS)
-// INTEGRANTE / EXPOSITOR: Estudiante de Ingeniería de Software / Sistemas
-// MATERIA: Seguridad en Aplicaciones / Arquitectura de Software / Microservicios
-// ====================================================================================================
-// ARCHIVO: AuthController.cs
-// PROPÓSITO: Microservicio independiente de Autenticación y Usuarios (Auth.Api).
-//            Expone endpoints HTTP para Registro, Inicio de Sesión (Login) y Obtención del Perfil Actual.
-//            Utiliza tokens JWT (JSON Web Tokens) con firma HMAC-SHA256 para autenticación sin estado (Stateless).
-// ====================================================================================================
-
 using System.Security.Claims;
 using Auth.Api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -18,29 +7,17 @@ using Shared.Common.Models;
 
 namespace Auth.Api.Controllers
 {
-    /// <summary>
-    /// Controlador RESTful encargado de la gestión de identidades y autenticación de usuarios.
-    /// Operaciones: POST /api/auth/register, POST /api/auth/login, GET /api/auth/me.
-    /// </summary>
     [ApiController]
     [Route("api/auth")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
 
-        /// <summary>
-        /// Constructor con Inyección de Dependencias.
-        /// Recibe el servicio 'IAuthService' para delegar la hashing de contraseñas y emisión de JWTs.
-        /// </summary>
         public AuthController(IAuthService authService)
         {
             _authService = authService;
         }
 
-        /// <summary>
-        /// Endpoint para registrar nuevos usuarios en la base de datos SQL Server (PrestamosDb).
-        /// Hashea la contraseña con BCrypt antes de almacenarla por estándares de seguridad OWASP.
-        /// </summary>
         [HttpPost("register")]
         [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status400BadRequest)]
@@ -61,10 +38,6 @@ namespace Auth.Api.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Endpoint para autenticar usuarios existentes.
-        /// Compara las credenciales (Username y Password) y genera un Token JWT firmado si es exitoso.
-        /// </summary>
         [HttpPost("login")]
         [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status400BadRequest)]
@@ -85,10 +58,6 @@ namespace Auth.Api.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Endpoint protegido para validar si el token guardado en el navegador sigue activo y válido.
-        /// Extrae las Claims de la solicitud HTTP autenticada.
-        /// </summary>
         [HttpGet("me")]
         [Authorize]
         [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]

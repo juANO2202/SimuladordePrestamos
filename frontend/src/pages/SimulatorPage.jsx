@@ -1,18 +1,3 @@
-// ====================================================================================================
-// PROYECTO UNIVERSITARIO: SIMULADOR DE PRÉSTAMOS / CRÉDITOS BANCARIOS (FRONTEND REACT)
-// INTEGRANTE / EXPOSITOR: Estudiante de Ingeniería de Software / Sistemas
-// MATERIA: Desarrollo Web Avanzado / Interfaces de Usuario (UI/UX) / Ingeniería de Software
-// ====================================================================================================
-// ARCHIVO: SimulatorPage.jsx
-// PROPÓSITO: Vista principal interactiva del simulador crediticio construida con React 18.
-//            Soporta:
-//            - Formateo dinámico de miles con puntos en JavaScript nativo (preservando la posición del cursor).
-//            - Conmutador de unidad de plazo (Meses | Años) con conversión automática.
-//            - Sistema de Amortización Francés vs Alemán.
-//            - Cálculo mediante API Microservicio en .NET 8 con fallback/respaldo local dinámico.
-//            - Exportación oficial a reporte PDF usando jsPDF y AutoTable.
-// ====================================================================================================
-
 import React, { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -21,16 +6,9 @@ import { generateCreditPdf } from '../utils/pdfGenerator';
 import { Download, FileText, AlertCircle } from 'lucide-react';
 
 export const SimulatorPage = () => {
-  // Contexto de autenticación para obtener el nombre del usuario logueado en la sesión
   const { user } = useAuth();
-  
-  // Referencia al elemento HTML input para manipulación nativa del cursor (caret position)
   const amountInputRef = useRef(null);
 
-  // --------------------------------------------------------------------------------------------------
-  // ESTADOS REACT (STATE MANAGEMENT)
-  // --------------------------------------------------------------------------------------------------
-  // Catálogo local por defecto (en caso de falta de conectividad con el microservicio de créditos)
   const [creditTypes, setCreditTypes] = useState([
     { id: 1, typeCode: 1, name: 'Crédito Consumo Ágil Banco', category: 'Consumo Prioritario', annualInterestRate: 15.5, minMonths: 1, maxMonths: 360, minAmount: 50, maxAmount: 50000 },
     { id: 2, typeCode: 2, name: 'Crédito Hipotecario Vivienda', category: 'Hipotecario', annualInterestRate: 9.5, minMonths: 12, maxMonths: 360, minAmount: 3000, maxAmount: 500000 },
@@ -38,41 +16,29 @@ export const SimulatorPage = () => {
   ]);
 
   const [selectedTypeCode, setSelectedTypeCode] = useState(1);
-  
-  // Estados para el Monto a Solicitar
-  const [loanAmount, setLoanAmount] = useState(500); // Valor numérico puro (entero/decimal) enviado al backend
-  const [displayAmount, setDisplayAmount] = useState('500'); // Texto formateado con puntos para la vista en pantalla (ej: 50.000)
-  
+  const [loanAmount, setLoanAmount] = useState(500);
+  const [displayAmount, setDisplayAmount] = useState('500');
   const [periodicity, setPeriodicity] = useState('Mensual (Cuotas cada 30 días)');
-  
-  // Estados para el Plazo (Meses / Años)
-  const [termUnit, setTermUnit] = useState('meses'); // 'meses' | 'años'
-  const [termValue, setTermValue] = useState(5); // Valor ingresado en la interfaz gráfica
-  const [termMonths, setTermMonths] = useState(5); // Valor calculado en meses para el motor financiero
-  
-  const [method, setMethod] = useState(1); // 1 = Francés (Cuota Fija), 2 = Alemán (Capital Constante)
+  const [termUnit, setTermUnit] = useState('meses');
+  const [termValue, setTermValue] = useState(5);
+  const [termMonths, setTermMonths] = useState(5);
+  const [method, setMethod] = useState(1);
   const [institutionType, setInstitutionType] = useState('Banco');
 
   const [simulationResult, setSimulationResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // --------------------------------------------------------------------------------------------------
-  // MANEJADORES DE EVENTOS (EVENT HANDLERS)
-  // --------------------------------------------------------------------------------------------------
-  
-  // Manejador del cambio de valor en el plazo (Meses o Años)
   const handleTermValueChange = (val) => {
     setTermValue(val);
     const num = Number(val) || 0;
     if (termUnit === 'años') {
-      setTermMonths(Math.round(num * 12)); // Conversión años -> meses
+      setTermMonths(Math.round(num * 12));
     } else {
       setTermMonths(num);
     }
   };
 
-  // Manejador del conmutador de unidad de plazo (Meses <-> Años)
   const handleUnitChange = (newUnit) => {
     if (newUnit === termUnit) return;
     setTermUnit(newUnit);
@@ -87,16 +53,6 @@ export const SimulatorPage = () => {
     }
   };
 
-  // --------------------------------------------------------------------------------------------------
-  // FORMATEADOR NATIVO DE MILES EN JAVASCRIPT CON PRESERVACIÓN DEL CURSOR (CARET POSITION)
-  // --------------------------------------------------------------------------------------------------
-  // Explicación Técnica para la Exposición:
-  // Al formatear un input mientras el usuario escribe (insertando puntos cada 3 dígitos), los navegadores
-  // tienden a saltar el cursor al final del texto.
-  // Este algoritmo cuenta la cantidad de dígitos numéricos existentes antes de la posición actual del cursor,
-  // remueve caracteres no numéricos con Expresiones Regulares (\D), inserta el punto separador con la regex
-  // \B(?=(\d{3})+(?!\d)), y reposiciona el cursor usando requestAnimationFrame y inputEl.setSelectionRange.
-  // --------------------------------------------------------------------------------------------------
   const handleAmountChange = (e) => {
     const inputEl = e.target;
     const rawVal = inputEl.value;
@@ -128,9 +84,6 @@ export const SimulatorPage = () => {
     });
   };
 
-  // --------------------------------------------------------------------------------------------------
-  // EFECTO REACT: Cargar catálogo inicial de créditos desde el Microservicio
-  // --------------------------------------------------------------------------------------------------
   useEffect(() => {
     const fetchCreditTypes = async () => {
       try {
@@ -139,7 +92,7 @@ export const SimulatorPage = () => {
           setCreditTypes(res.data);
         }
       } catch (err) {
-        console.log('Usando catálogo local de tipos de crédito (modo offline)', err);
+        console.log('Usando catálogo local de tipos de crédito', err);
       }
     };
     fetchCreditTypes();
@@ -147,16 +100,11 @@ export const SimulatorPage = () => {
 
   const activeCreditType = creditTypes.find(ct => (ct.typeCode || ct.id) === Number(selectedTypeCode)) || creditTypes[0];
 
-  // --------------------------------------------------------------------------------------------------
-  // CÁLCULO LOCAL DE RESPALDO (FALLBACK OFFLINE)
-  // --------------------------------------------------------------------------------------------------
-  // Garantiza que la simulación funcione sin interrupciones visuales en caso de problemas de red.
-  // --------------------------------------------------------------------------------------------------
   const calculateLocalSimulation = (amount, months, selectedMethod) => {
     const annualInterestRate = activeCreditType?.annualInterestRate || 15.5;
     const teaDouble = annualInterestRate / 100;
     const monthlyRate = Math.pow(1.0 + teaDouble, 1.0 / 12.0) - 1.0;
-    const desgravamenRate = 0.0006; // 0.06% mensual
+    const desgravamenRate = 0.0006;
 
     const n = Math.max(1, Number(months));
     const principal = Number(amount);
@@ -171,7 +119,6 @@ export const SimulatorPage = () => {
     let remainingBalance = principal;
 
     if (Number(selectedMethod) === 1) {
-      // Método Francés: Cuota Fija
       const factor = Math.pow(1 + monthlyRate, n);
       const r = (monthlyRate === 0 || factor <= 1)
         ? principal / n
@@ -206,7 +153,6 @@ export const SimulatorPage = () => {
         });
       }
     } else {
-      // Método Alemán: Capital Constante
       const constantCapital = Math.round((principal / n) * 100) / 100;
 
       for (let k = 1; k <= n; k++) {
@@ -256,7 +202,6 @@ export const SimulatorPage = () => {
     };
   };
 
-  // Ejecución del Cálculo (invoca la API y usa fallback si es necesario)
   const handleCalculate = async (methodToUse = method) => {
     setError('');
     const amountNum = Number(loanAmount);
@@ -298,12 +243,10 @@ export const SimulatorPage = () => {
     }
   };
 
-  // Efecto automático: Recalcular la simulación en tiempo real al cambiar de línea o método
   useEffect(() => {
     handleCalculate();
   }, [selectedTypeCode, method]);
 
-  // Generación del reporte en PDF usando el utilitario jsPDF
   const handleExportPdf = () => {
     if (simulationResult) {
       generateCreditPdf(simulationResult, user?.username);
@@ -313,8 +256,6 @@ export const SimulatorPage = () => {
   return (
     <div className="animate-fade-in" style={{ paddingBottom: '3rem' }}>
       <div className="grid-simulator" style={{ gridTemplateColumns: '340px 1fr', gap: '1.75rem', alignItems: 'start' }}>
-        
-        {/* PANEL IZQUIERDO: FORMULARIO INTERACTIVO "Tu Solicitud" */}
         <div style={{
           background: '#ffffff',
           borderRadius: '16px',
@@ -330,7 +271,6 @@ export const SimulatorPage = () => {
           </p>
 
           <form onSubmit={(e) => { e.preventDefault(); handleCalculate(); }}>
-            {/* 1. Monto a Solicitar (USD) con formateador dinámico */}
             <div className="form-group">
               <label className="form-label" style={{ fontSize: '0.9rem' }}>
                 1. Monto a Solicitar (USD)
@@ -353,7 +293,6 @@ export const SimulatorPage = () => {
               </span>
             </div>
 
-            {/* 2. Periodicidad de Pago */}
             <div className="form-group" style={{ marginTop: '1rem' }}>
               <label className="form-label" style={{ fontSize: '0.9rem' }}>
                 2. Periodicidad de Pago
@@ -368,7 +307,6 @@ export const SimulatorPage = () => {
               </select>
             </div>
 
-            {/* 3. Plazo (Meses / Años) con Conmutador Toggle */}
             <div className="form-group" style={{ marginTop: '1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
                 <label className="form-label" style={{ fontSize: '0.9rem', margin: 0 }}>
@@ -436,7 +374,6 @@ export const SimulatorPage = () => {
               </span>
             </div>
 
-            {/* 4. Selector del Sistema de Amortización (Francés vs Alemán) */}
             <div className="form-group" style={{ marginTop: '1rem' }}>
               <label className="form-label" style={{ fontSize: '0.9rem' }}>
                 4. Sistema de Amortización
@@ -497,7 +434,6 @@ export const SimulatorPage = () => {
               </span>
             </div>
 
-            {/* Tipo de Institución */}
             <div className="form-group" style={{ marginTop: '1rem' }}>
               <label className="form-label" style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
                 Tipo de Institución (Opcional)
@@ -544,10 +480,7 @@ export const SimulatorPage = () => {
           </form>
         </div>
 
-        {/* PANEL DERECHO: VISTA DE RESULTADOS (KPIS Y TABLA OFICIAL DE AMORTIZACIÓN) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          
-          {/* Header Superior con Badges y Botón de PDF */}
           <div style={{
             background: '#ffffff',
             borderRadius: '16px',
@@ -598,10 +531,7 @@ export const SimulatorPage = () => {
             </button>
           </div>
 
-          {/* GRID DE TARJETAS DE RESULTADOS (KPIS RESUMEN) */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-            
-            {/* KPI 1: CUOTA MENSUAL */}
             <div style={{
               background: '#f8fafc',
               border: '1px solid #e2e8f0',
@@ -622,7 +552,6 @@ export const SimulatorPage = () => {
               </span>
             </div>
 
-            {/* KPI 2: TOTAL INTERÉS */}
             <div style={{
               background: '#ffffff',
               border: '1px solid #e2e8f0',
@@ -643,7 +572,6 @@ export const SimulatorPage = () => {
               </span>
             </div>
 
-            {/* KPI 3: TOTAL DESGRAVAMEN */}
             <div style={{
               background: '#ffffff',
               border: '1px solid #e2e8f0',
@@ -664,7 +592,6 @@ export const SimulatorPage = () => {
               </span>
             </div>
 
-            {/* KPI 4: TOTAL A PAGAR */}
             <div style={{
               background: '#ffffff',
               border: '1px solid #e2e8f0',
@@ -684,14 +611,11 @@ export const SimulatorPage = () => {
                 {simulationResult ? simulationResult.termMonths : termMonths} cuotas
               </span>
             </div>
-
           </div>
 
-          {/* COMPONENTE REUTILIZABLE: TABLA DE AMORTIZACIÓN */}
           {simulationResult && (
             <AmortizationTable simulation={simulationResult} userName={user?.username} />
           )}
-
         </div>
       </div>
     </div>

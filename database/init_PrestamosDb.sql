@@ -1,11 +1,3 @@
--- ====================================================================================================
--- PROYECTO UNIVERSITARIO: SIMULADOR DE PRÉSTAMOS / CRÉDITOS BANCARIOS (BASE DE DATOS)
-// ARCHIVO: init_PrestamosDb.sql
-// PROPÓSITO: Script DDL/DML para la creación e inicialización completa de la Base de Datos 'PrestamosDb'
-//            en SQL Server Express (JUAN\SQLEXPRESS / localhost\SQLEXPRESS).
-// ====================================================================================================
-
--- 1. CREACIÓN DE LA BASE DE DATOS
 IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'PrestamosDb')
 BEGIN
     CREATE DATABASE PrestamosDb;
@@ -15,7 +7,6 @@ GO
 USE PrestamosDb;
 GO
 
--- 2. TABLA DE CONTROL DE MIGRACIONES ENTITY FRAMEWORK CORE
 IF OBJECT_ID(N'dbo.__EFMigrationsHistory', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.__EFMigrationsHistory (
@@ -25,7 +16,6 @@ BEGIN
 END
 GO
 
--- 3. TABLA DE USUARIOS DE LA APLICACIÓN (dbo.Users)
 IF OBJECT_ID(N'dbo.Users', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.Users (
@@ -38,7 +28,6 @@ BEGIN
 END
 GO
 
--- 4. TABLA DE CATÁLOGO COMERCIAL DE LÍNEAS DE CRÉDITO (dbo.CreditTypes)
 IF OBJECT_ID(N'dbo.CreditTypes', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.CreditTypes (
@@ -46,7 +35,7 @@ BEGIN
         TypeCode INT NOT NULL UNIQUE,
         Name NVARCHAR(100) NOT NULL,
         Description NVARCHAR(255) NULL,
-        AnnualInterestRate DECIMAL(5,2) NOT NULL, -- Tasa Efectiva Anual (TEA)
+        AnnualInterestRate DECIMAL(5,2) NOT NULL,
         MinMonths INT NOT NULL,
         MaxMonths INT NOT NULL,
         MinAmount DECIMAL(18,2) NOT NULL,
@@ -55,7 +44,6 @@ BEGIN
 END
 GO
 
--- 5. TABLA DE HISTORIAL DE SIMULACIONES PERSISTIDAS (dbo.SimulationRecords)
 IF OBJECT_ID(N'dbo.SimulationRecords', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.SimulationRecords (
@@ -65,7 +53,7 @@ BEGIN
         CreditTypeName NVARCHAR(100) NOT NULL,
         Amount DECIMAL(18,2) NOT NULL,
         TermMonths INT NOT NULL,
-        Method INT NOT NULL, -- 1 = Francés, 2 = Alemán
+        Method INT NOT NULL,
         MethodName NVARCHAR(50) NOT NULL,
         AnnualInterestRate DECIMAL(5,2) NOT NULL,
         InitialMonthlyPayment DECIMAL(18,2) NOT NULL,
@@ -79,8 +67,6 @@ BEGIN
 END
 GO
 
--- 6. DATOS SEMILLA (SEED DATA QUEMADO)
--- Usuario Administrador por defecto (Contraseña encriptada con BCrypt: "password123")
 IF NOT EXISTS (SELECT 1 FROM dbo.Users WHERE Username = 'admin')
 BEGIN
     INSERT INTO dbo.Users (Username, Email, PasswordHash, CreatedAt)
@@ -88,7 +74,6 @@ BEGIN
 END
 GO
 
--- Líneas de Crédito oficiales en el sistema
 IF NOT EXISTS (SELECT 1 FROM dbo.CreditTypes WHERE TypeCode = 1)
 BEGIN
     INSERT INTO dbo.CreditTypes (TypeCode, Name, Description, AnnualInterestRate, MinMonths, MaxMonths, MinAmount, MaxAmount)
@@ -110,6 +95,5 @@ BEGIN
 END
 GO
 
--- Consultas de Verificación
 SELECT * FROM dbo.CreditTypes;
 SELECT * FROM dbo.Users;
