@@ -14,55 +14,34 @@ const MainApp = () => {
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#f8fafc',
-        color: '#0f172a',
-        fontWeight: '700',
-        fontSize: '1.1rem',
-        gap: '0.75rem'
-      }}>
-        <Landmark size={28} className="animate-spin" color="#0f172a" />
-        Iniciando Simulador de Préstamos...
+      <div className="splash">
+        <Landmark size={24} className="animate-spin" />
+        Iniciando Simulador de Préstamos…
       </div>
     );
+  }
+
+  let content;
+  if (!isAuthenticated) {
+    content = authView === 'login'
+      ? <LoginPage onSwitchToRegister={() => setAuthView('register')} />
+      : <RegisterPage onSwitchToLogin={() => setAuthView('login')} />;
+  } else {
+    content = activeTab === 'simulator' ? <SimulatorPage /> : <HistoryPage />;
   }
 
   return (
     <div className="app-container">
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      <main className="main-content">
-        {!isAuthenticated ? (
-          <LoginPage />
-        ) : (
-          activeTab === 'simulator' ? (
-            <SimulatorPage />
-          ) : (
-            <HistoryPage />
-          )
-        )}
-      </main>
+      <main className="main-content">{content}</main>
 
-      <footer style={{
-        background: '#ffffff',
-        borderTop: '1px solid #e2e8f0',
-        padding: '1.5rem',
-        textAlign: 'center',
-        fontSize: '0.8rem',
-        color: '#64748b',
-        marginTop: 'auto'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.4rem', marginBottom: '0.3rem', color: '#475569', fontWeight: '600' }}>
-          <ShieldCheck size={16} color="#0f172a" />
-          <span>Conexión Segura protegida con JSON Web Tokens (JWT) & Encriptación BCrypt</span>
+      <footer className="footer">
+        <div className="footer-badge">
+          <ShieldCheck size={15} />
+          Sesión protegida con JSON Web Tokens y contraseñas cifradas con BCrypt
         </div>
-        <div>
-          © {new Date().getFullYear()} Simulador de Préstamos. Todos los derechos reservados.
-        </div>
+        <div>© {new Date().getFullYear()} Simulador de Préstamos. Los resultados son informativos y no constituyen una oferta de crédito.</div>
       </footer>
     </div>
   );

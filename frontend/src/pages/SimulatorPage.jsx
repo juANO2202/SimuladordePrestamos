@@ -3,16 +3,18 @@ import { apiFetch } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { AmortizationTable } from '../components/AmortizationTable';
 import { generateCreditPdf } from '../utils/pdfGenerator';
-import { Download, FileText, AlertCircle } from 'lucide-react';
+import { formatMoney } from '../utils/format';
+import { Download, Calculator, AlertCircle } from 'lucide-react';
 
 export const SimulatorPage = () => {
   const { user } = useAuth();
   const amountInputRef = useRef(null);
 
+  // Catálogo local de respaldo (mismos valores que el seed del backend)
   const [creditTypes, setCreditTypes] = useState([
-    { id: 1, typeCode: 1, name: 'Crédito Consumo Ágil Banco', category: 'Consumo Prioritario', annualInterestRate: 15.5, minMonths: 1, maxMonths: 360, minAmount: 50, maxAmount: 50000 },
-    { id: 2, typeCode: 2, name: 'Crédito Hipotecario Vivienda', category: 'Hipotecario', annualInterestRate: 9.5, minMonths: 12, maxMonths: 360, minAmount: 3000, maxAmount: 500000 },
-    { id: 3, typeCode: 3, name: 'Crédito Educativo Superior', category: 'Educativo', annualInterestRate: 8.0, minMonths: 6, maxMonths: 120, minAmount: 500, maxAmount: 80000 }
+    { id: 1, typeCode: 1, name: 'Crédito de Consumo', annualInterestRate: 15.5, minMonths: 6, maxMonths: 60, minAmount: 500, maxAmount: 40000 },
+    { id: 2, typeCode: 2, name: 'Crédito Hipotecario', annualInterestRate: 9.5, minMonths: 12, maxMonths: 300, minAmount: 10000, maxAmount: 500000 },
+    { id: 3, typeCode: 3, name: 'Crédito Educativo', annualInterestRate: 8.0, minMonths: 6, maxMonths: 120, minAmount: 1000, maxAmount: 80000 }
   ]);
 
   const [selectedTypeCode, setSelectedTypeCode] = useState(1);
@@ -20,8 +22,8 @@ export const SimulatorPage = () => {
   const [displayAmount, setDisplayAmount] = useState('500');
   const [periodicity, setPeriodicity] = useState('Mensual (Cuotas cada 30 días)');
   const [termUnit, setTermUnit] = useState('meses');
-  const [termValue, setTermValue] = useState(5);
-  const [termMonths, setTermMonths] = useState(5);
+  const [termValue, setTermValue] = useState(12);
+  const [termMonths, setTermMonths] = useState(12);
   const [method, setMethod] = useState(1);
   const [institutionType, setInstitutionType] = useState('Banco');
 
@@ -99,6 +101,7 @@ export const SimulatorPage = () => {
   }, []);
 
   const activeCreditType = creditTypes.find(ct => (ct.typeCode || ct.id) === Number(selectedTypeCode)) || creditTypes[0];
+  const categoryByCode = { 1: 'Consumo', 2: 'Hipotecario', 3: 'Educativo' };
 
   const calculateLocalSimulation = (amount, months, selectedMethod) => {
     const annualInterestRate = activeCreditType?.annualInterestRate || 15.5;
@@ -202,7 +205,8 @@ export const SimulatorPage = () => {
     };
   };
 
-  const handleCalculate = async (methodToUse = method) => {
+  // save=true solo cuando el usuario presiona "Calcular"; los recálculos automáticos no se guardan en el historial
+  const handleCalculate = async (save = false) => {
     setError('');
     const amountNum = Number(loanAmount);
     const monthsNum = Number(termMonths);
@@ -225,7 +229,8 @@ export const SimulatorPage = () => {
           creditType: Number(selectedTypeCode),
           amount: amountNum,
           termMonths: monthsNum,
-          method: Number(methodToUse),
+          method: Number(method),
+          save,
           periodicity,
           institutionType
         })
@@ -233,18 +238,22 @@ export const SimulatorPage = () => {
 
       if (res && res.success && res.data) {
         setSimulationResult(res.data);
+      } else if (res && res.networkError) {
+        // Sin conexión con el backend: calcular localmente (no se guarda en el historial)
+        setSimulationResult(calculateLocalSimulation(amountNum, monthsNum, method));
       } else {
-        setSimulationResult(calculateLocalSimulation(amountNum, monthsNum, methodToUse));
+        // Error de validación del servidor (monto/plazo fuera de rango, etc.)
+        setError(res?.message || 'No se pudo calcular la simulación.');
       }
     } catch {
-      setSimulationResult(calculateLocalSimulation(amountNum, monthsNum, methodToUse));
+      setSimulationResult(calculateLocalSimulation(amountNum, monthsNum, method));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    handleCalculate();
+    handleCalculate(false);
   }, [selectedTypeCode, method]);
 
   const handleExportPdf = () => {
@@ -253,370 +262,190 @@ export const SimulatorPage = () => {
     }
   };
 
+  const typeCode = activeCreditType?.typeCode || activeCreditType?.id;
+  const result = simulationResult;
+  const totalForSplit = result ? result.amount + result.totalInterest + result.totalDesgravamen : 0;
+  const pct = (value) => (totalForSplit > 0 ? (value / totalForSplit) * 100 : 0);
+
   return (
-    <div className="animate-fade-in" style={{ paddingBottom: '3rem' }}>
-      <div className="grid-simulator" style={{ gridTemplateColumns: '340px 1fr', gap: '1.75rem', alignItems: 'start' }}>
-        <div style={{
-          background: '#ffffff',
-          borderRadius: '16px',
-          padding: '1.75rem',
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 4px 16px -2px rgba(0,0,0,0.04)'
-        }}>
-          <h2 style={{ fontSize: '1.35rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.2rem' }}>
-            Tu Solicitud
-          </h2>
-          <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1.5rem', lineHeight: '1.3' }}>
-            Ingresa los datos para calcular tu cronograma de pagos
+    <div className="page">
+      <header className="page-header">
+        <p className="eyebrow">{categoryByCode[typeCode] || 'Crédito'} · {institutionType}</p>
+        <h1 className="display">{activeCreditType?.name || 'Simulador de crédito'}</h1>
+        <p className="subhead">
+          Tasa efectiva anual del <strong className="num">{activeCreditType?.annualInterestRate}%</strong> y seguro de
+          desgravamen del <strong className="num">0,06%</strong> mensual sobre saldo.
+        </p>
+      </header>
+
+      <div className="simulator-layout">
+        <aside className="card simulator-form">
+          <h2 className="title" style={{ marginBottom: '0.25rem' }}>Tu solicitud</h2>
+          <p className="caption" style={{ marginBottom: '1.5rem' }}>
+            El resultado se actualiza al cambiar el tipo de crédito o el sistema.
           </p>
 
-          <form onSubmit={(e) => { e.preventDefault(); handleCalculate(); }}>
+          <form onSubmit={(e) => { e.preventDefault(); handleCalculate(true); }}>
             <div className="form-group">
-              <label className="form-label" style={{ fontSize: '0.9rem' }}>
-                1. Monto a Solicitar (USD)
-              </label>
-              <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontWeight: '600', color: '#64748b' }}>$</span>
+              <label className="form-label" htmlFor="credit-type">Tipo de crédito</label>
+              <select
+                id="credit-type"
+                className="form-select"
+                value={selectedTypeCode}
+                onChange={(e) => setSelectedTypeCode(Number(e.target.value))}
+              >
+                {creditTypes.map((ct) => (
+                  <option key={ct.id} value={ct.typeCode || ct.id}>{ct.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="amount">Monto a solicitar (USD)</label>
+              <div className="field">
+                <span className="field-prefix">$</span>
                 <input
+                  id="amount"
                   ref={amountInputRef}
                   type="text"
                   inputMode="numeric"
-                  className="form-input"
-                  style={{ paddingLeft: '2.2rem', fontWeight: '700', fontSize: '1rem' }}
+                  className="form-input amount-input num"
                   value={displayAmount}
                   onChange={handleAmountChange}
                   placeholder="500"
                 />
               </div>
-              <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.15rem' }}>
-                Monto mínimo sugerido: $50.00 USD
+              <span className="field-hint num">
+                Rango permitido: ${activeCreditType?.minAmount?.toLocaleString('es-EC')} – ${activeCreditType?.maxAmount?.toLocaleString('es-EC')}
               </span>
             </div>
 
-            <div className="form-group" style={{ marginTop: '1rem' }}>
-              <label className="form-label" style={{ fontSize: '0.9rem' }}>
-                2. Periodicidad de Pago
-              </label>
+            <div className="form-group">
+              <div className="form-row">
+                <label className="form-label" htmlFor="term">Plazo</label>
+                <div className="segmented sm" role="group" aria-label="Unidad del plazo" style={{ '--index': termUnit === 'meses' ? 0 : 1 }}>
+                  <button type="button" aria-pressed={termUnit === 'meses'} onClick={() => handleUnitChange('meses')}>Meses</button>
+                  <button type="button" aria-pressed={termUnit === 'años'} onClick={() => handleUnitChange('años')}>Años</button>
+                </div>
+              </div>
+              <input
+                id="term"
+                type="number"
+                className="form-input num"
+                value={termValue}
+                onChange={(e) => handleTermValueChange(e.target.value)}
+                min="1"
+                max={termUnit === 'años' ? '30' : '360'}
+              />
+              <span className="field-hint num">
+                Plazo permitido: {activeCreditType?.minMonths} a {activeCreditType?.maxMonths} meses
+              </span>
+            </div>
+
+            <div className="form-group">
+              <span className="form-label">Sistema de amortización</span>
+              <div className="segmented block" role="group" aria-label="Sistema de amortización" style={{ '--index': method === 1 ? 0 : 1 }}>
+                <button type="button" aria-pressed={method === 1} onClick={() => setMethod(1)}>Francés</button>
+                <button type="button" aria-pressed={method === 2} onClick={() => setMethod(2)}>Alemán</button>
+              </div>
+              <span className="field-hint">
+                {method === 1
+                  ? 'Cuota fija: pagas lo mismo cada mes.'
+                  : 'Cuota decreciente: pagas más al inicio y menos al final.'}
+              </span>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="periodicity">Periodicidad</label>
               <select
+                id="periodicity"
                 className="form-select"
                 value={periodicity}
                 onChange={(e) => setPeriodicity(e.target.value)}
-                style={{ fontSize: '0.88rem', fontWeight: '600' }}
               >
-                <option value="Mensual (Cuotas cada 30 días)">Mensual (Cuotas cada 30 días)</option>
+                <option value="Mensual (Cuotas cada 30 días)">Mensual (cuotas cada 30 días)</option>
               </select>
             </div>
 
-            <div className="form-group" style={{ marginTop: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                <label className="form-label" style={{ fontSize: '0.9rem', margin: 0 }}>
-                  3. Plazo ({termUnit === 'años' ? 'Años' : 'Meses'})
-                </label>
-                <div style={{
-                  display: 'flex',
-                  background: '#f1f5f9',
-                  padding: '2px',
-                  borderRadius: '6px',
-                  fontSize: '0.75rem',
-                  fontWeight: '700'
-                }}>
-                  <button
-                    type="button"
-                    onClick={() => handleUnitChange('meses')}
-                    style={{
-                      padding: '0.2rem 0.6rem',
-                      borderRadius: '4px',
-                      border: 'none',
-                      background: termUnit === 'meses' ? '#ffffff' : 'transparent',
-                      color: termUnit === 'meses' ? '#0f172a' : '#64748b',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      boxShadow: termUnit === 'meses' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    Meses
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleUnitChange('años')}
-                    style={{
-                      padding: '0.2rem 0.6rem',
-                      borderRadius: '4px',
-                      border: 'none',
-                      background: termUnit === 'años' ? '#ffffff' : 'transparent',
-                      color: termUnit === 'años' ? '#0f172a' : '#64748b',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      boxShadow: termUnit === 'años' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    Años
-                  </button>
-                </div>
-              </div>
-
-              <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>📅</span>
-                <input
-                  type="number"
-                  className="form-input"
-                  style={{ paddingLeft: '2.4rem', fontWeight: '700', fontSize: '1rem' }}
-                  value={termValue}
-                  onChange={(e) => handleTermValueChange(e.target.value)}
-                  min="1"
-                  max={termUnit === 'años' ? '30' : '360'}
-                />
-              </div>
-              <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.15rem' }}>
-                {termUnit === 'años' ? 'Financiamiento hasta 30 años' : 'Financiamiento hasta 360 meses'}
-              </span>
-            </div>
-
-            <div className="form-group" style={{ marginTop: '1rem' }}>
-              <label className="form-label" style={{ fontSize: '0.9rem' }}>
-                4. Sistema de Amortización
-              </label>
-              
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '0.25rem',
-                background: '#f1f5f9',
-                padding: '4px',
-                borderRadius: '10px',
-                marginBottom: '0.4rem'
-              }}>
-                <button
-                  type="button"
-                  onClick={() => { setMethod(1); handleCalculate(1); }}
-                  style={{
-                    padding: '0.55rem',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: method === 1 ? '#ffffff' : 'transparent',
-                    color: method === 1 ? '#0f172a' : '#64748b',
-                    fontWeight: '700',
-                    fontSize: '0.85rem',
-                    cursor: 'pointer',
-                    boxShadow: method === 1 ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  Francés
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => { setMethod(2); handleCalculate(2); }}
-                  style={{
-                    padding: '0.55rem',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: method === 2 ? '#ffffff' : 'transparent',
-                    color: method === 2 ? '#0f172a' : '#64748b',
-                    fontWeight: '700',
-                    fontSize: '0.85rem',
-                    cursor: 'pointer',
-                    boxShadow: method === 2 ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  Alemán
-                </button>
-              </div>
-
-              <span style={{ fontSize: '0.75rem', color: '#94a3b8', lineHeight: '1.25' }}>
-                {method === 1
-                  ? 'Cuota fija periódica (capital creciente + interés decreciente)'
-                  : 'Cuota decreciente (capital constante + interés decreciente)'}
-              </span>
-            </div>
-
-            <div className="form-group" style={{ marginTop: '1rem' }}>
-              <label className="form-label" style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
-                Tipo de Institución (Opcional)
-              </label>
+            <div className="form-group">
+              <label className="form-label" htmlFor="institution">Tipo de institución</label>
               <select
+                id="institution"
                 className="form-select"
                 value={institutionType}
                 onChange={(e) => setInstitutionType(e.target.value)}
-                style={{ fontSize: '0.85rem', padding: '0.6rem 0.85rem' }}
               >
                 <option value="Banco">Banco</option>
               </select>
             </div>
 
             {error && (
-              <div className="alert alert-error" style={{ marginTop: '1rem', fontSize: '0.8rem' }}>
+              <div className="alert alert-error" role="alert">
                 <AlertCircle size={16} />
-                {error}
+                <div>{error}</div>
               </div>
             )}
 
-            <button
-              type="submit"
-              className="btn"
-              style={{
-                width: '100%',
-                marginTop: '1.25rem',
-                padding: '0.85rem',
-                background: '#0a2540',
-                color: '#ffffff',
-                fontWeight: '700',
-                borderRadius: '8px',
-                fontSize: '0.95rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem'
-              }}
-              disabled={loading}
-            >
-              <FileText size={18} />
-              {loading ? 'Calculando...' : 'Calcular'}
+            <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={loading}>
+              <Calculator size={18} />
+              {loading ? 'Calculando…' : 'Calcular'}
             </button>
           </form>
-        </div>
+        </aside>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div style={{
-            background: '#ffffff',
-            borderRadius: '16px',
-            padding: '1.5rem 1.75rem',
-            border: '1px solid #e2e8f0',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '1rem'
-          }}>
-            <div>
-              <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem' }}>
-                <span style={{ background: '#0a2540', color: '#ffffff', fontSize: '0.72rem', fontWeight: '700', padding: '0.2rem 0.65rem', borderRadius: '12px' }}>
-                  {institutionType}
-                </span>
-                <span style={{ background: '#f1f5f9', color: '#475569', fontSize: '0.72rem', fontWeight: '700', padding: '0.2rem 0.65rem', borderRadius: '12px' }}>
-                  {activeCreditType?.category || 'Consumo Prioritario'}
-                </span>
-                <span style={{ background: '#f1f5f9', color: '#475569', fontSize: '0.72rem', fontWeight: '700', padding: '0.2rem 0.65rem', borderRadius: '12px' }}>
-                  {method === 1 ? 'Sistema Francés' : 'Sistema Alemán'}
-                </span>
-              </div>
-
-              <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a', margin: 0 }}>
-                {activeCreditType?.name || 'Crédito Consumo Ágil Banco'}
-              </h1>
-
-              <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '0.25rem', fontWeight: '600' }}>
-                Tasa Efectiva Anual: <strong style={{ color: '#0f172a' }}>{activeCreditType?.annualInterestRate || 15.5}%</strong> · Seguro Desgravamen: <strong style={{ color: '#0f172a' }}>0.06% mensual</strong>
-              </p>
+        <section className="results" aria-live="polite">
+          <div className="hero">
+            <div className="chips">
+              <span className="chip accent">{method === 1 ? 'Sistema francés' : 'Sistema alemán'}</span>
+              <span className="chip">{result ? result.termMonths : termMonths} cuotas</span>
+              <span className="chip">{categoryByCode[typeCode] || 'Crédito'}</span>
             </div>
-
-            <button
-              onClick={handleExportPdf}
-              className="btn"
-              style={{
-                background: '#10b981',
-                color: '#ffffff',
-                padding: '0.7rem 1.25rem',
-                fontSize: '0.88rem',
-                fontWeight: '700',
-                borderRadius: '8px'
-              }}
-              disabled={!simulationResult}
-            >
+            <button onClick={handleExportPdf} className="btn btn-secondary" disabled={!result}>
               <Download size={16} /> Descargar PDF
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-            <div style={{
-              background: '#f8fafc',
-              border: '1px solid #e2e8f0',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                CUOTA MENSUAL
-              </span>
-              <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#0a2540', margin: '0.5rem 0 0.2rem' }}>
-                ${simulationResult ? simulationResult.initialMonthlyPayment.toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
-              </div>
-              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                {method === 1 ? 'Cuota base fija' : 'Cuota inicial variable'}
-              </span>
+          <div className="stats">
+            <div className="stat featured">
+              <span className="eyebrow">Cuota mensual</span>
+              <div className="stat-value">{result ? formatMoney(result.initialMonthlyPayment) : '$0,00'}</div>
+              <span className="caption">{method === 1 ? 'Cuota base fija' : 'Primera cuota (decrece)'}</span>
             </div>
-
-            <div style={{
-              background: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                TOTAL INTERÉS
-              </span>
-              <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#d97706', margin: '0.5rem 0 0.2rem' }}>
-                ${simulationResult ? simulationResult.totalInterest.toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
-              </div>
-              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                Costo financiero
-              </span>
+            <div className="stat">
+              <span className="eyebrow">Total interés</span>
+              <div className="stat-value" style={{ color: 'var(--warning)' }}>{result ? formatMoney(result.totalInterest) : '$0,00'}</div>
+              <span className="caption">Costo financiero</span>
             </div>
-
-            <div style={{
-              background: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                TOTAL DESGRAVAMEN
-              </span>
-              <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#2563eb', margin: '0.5rem 0 0.2rem' }}>
-                ${simulationResult ? simulationResult.totalDesgravamen.toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
-              </div>
-              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                Sobre saldo deudor
-              </span>
+            <div className="stat">
+              <span className="eyebrow">Desgravamen</span>
+              <div className="stat-value" style={{ color: 'var(--success)' }}>{result ? formatMoney(result.totalDesgravamen) : '$0,00'}</div>
+              <span className="caption">Seguro sobre saldo</span>
             </div>
-
-            <div style={{
-              background: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                TOTAL A PAGAR
-              </span>
-              <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#0f172a', margin: '0.5rem 0 0.2rem' }}>
-                ${simulationResult ? simulationResult.totalAmountPaid.toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
-              </div>
-              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                {simulationResult ? simulationResult.termMonths : termMonths} cuotas
-              </span>
+            <div className="stat">
+              <span className="eyebrow">Total a pagar</span>
+              <div className="stat-value">{result ? formatMoney(result.totalAmountPaid) : '$0,00'}</div>
+              <span className="caption">{result ? result.termMonths : termMonths} cuotas</span>
             </div>
           </div>
 
-          {simulationResult && (
-            <AmortizationTable simulation={simulationResult} userName={user?.username} />
+          {result && (
+            <div className="card card-flat">
+              <h3 className="headline">¿En qué se va tu dinero?</h3>
+              <div className="split-bar" role="img" aria-label="Distribución entre capital, interés y desgravamen">
+                <span className="split-capital" style={{ width: `${pct(result.amount)}%` }} />
+                <span className="split-interest" style={{ width: `${pct(result.totalInterest)}%` }} />
+                <span className="split-insurance" style={{ width: `${pct(result.totalDesgravamen)}%` }} />
+              </div>
+              <div className="legend num">
+                <span><i className="split-capital" />Capital {formatMoney(result.amount)}</span>
+                <span><i className="split-interest" />Interés {formatMoney(result.totalInterest)}</span>
+                <span><i className="split-insurance" />Desgravamen {formatMoney(result.totalDesgravamen)}</span>
+              </div>
+            </div>
           )}
-        </div>
+
+          {result && <AmortizationTable simulation={result} userName={user?.username} />}
+        </section>
       </div>
     </div>
   );

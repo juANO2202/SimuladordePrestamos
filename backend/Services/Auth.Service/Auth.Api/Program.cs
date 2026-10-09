@@ -20,14 +20,7 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
     }
     else
     {
-        try
-        {
-            options.UseSqlServer(connectionString);
-        }
-        catch
-        {
-            options.UseInMemoryDatabase("PrestamosDb");
-        }
+        options.UseSqlServer(connectionString);
     }
 });
 
@@ -62,7 +55,8 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(o => o.SuppressModelStateInvalidFilter = true); // los controllers devuelven ApiResponse propio
 builder.Services.AddEndpointsApiExplorer();
 
 // Documentación Swagger con soporte JWT Bearer
@@ -112,18 +106,32 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
     try
     {
-        if (dbContext.Database.IsSqlServer())
+        // Reintentos: SQL Server puede estar arrancando o el otro servicio puede estar creando la misma base
+        for (var attempt = 1; ; attempt++)
         {
-            dbContext.Database.Migrate();
+            try
+            {
+                if (dbContext.Database.IsSqlServer())
+                {
+                    dbContext.Database.Migrate();
+                }
+                else
+                {
+                    dbContext.Database.EnsureCreated();
+                }
+                break;
+            }
+            catch when (attempt < 10)
+            {
+                Thread.Sleep(3000);
+            }
         }
-        else
+        // Garantizar que exista el usuario precargado por defecto (admin / password123).
+        // El seed del modelo (HasData) trae un hash que no es BCrypt válido, así que se corrige aquí.
+        var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+        var admin = dbContext.Users.FirstOrDefault(u => u.Username == "admin");
+        if (admin == null)
         {
-            dbContext.Database.EnsureCreated();
-        }
-        // Garantizar que exista el usuario precargado por defecto (admin / password123)
-        if (!dbContext.Users.Any())
-        {
-            var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
             dbContext.Users.Add(new Auth.Api.Entities.User
             {
                 Username = "admin",
@@ -131,6 +139,11 @@ using (var scope = app.Services.CreateScope())
                 PasswordHash = hasher.HashPassword("password123"),
                 CreatedAt = DateTime.UtcNow
             });
+            dbContext.SaveChanges();
+        }
+        else if (admin.PasswordHash == AuthDbContext.PlaceholderAdminHash)
+        {
+            admin.PasswordHash = hasher.HashPassword("password123");
             dbContext.SaveChanges();
         }
     }
@@ -141,15 +154,12 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-if (app.Environment.IsDevelopment() || true)
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Auth.Api v1"));
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-app.Run("http://localhost:5001");
+app.Run();

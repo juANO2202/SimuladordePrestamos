@@ -15,7 +15,15 @@ namespace Auth.Api.Services
 
         public bool VerifyPassword(string password, string hash)
         {
-            return BCrypt.Net.BCrypt.Verify(password, hash);
+            try
+            {
+                return BCrypt.Net.BCrypt.Verify(password, hash);
+            }
+            catch (BCrypt.Net.SaltParseException)
+            {
+                // Hash almacenado con formato inválido
+                return false;
+            }
         }
     }
 }

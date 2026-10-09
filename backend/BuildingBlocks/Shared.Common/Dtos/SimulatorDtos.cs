@@ -6,6 +6,7 @@ namespace Shared.Common.Dtos
     public class CreditTypeOptionDto
     {
         public int Id { get; set; }
+        public CreditTypeEnum TypeCode { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public decimal AnnualInterestRate { get; set; }
@@ -31,6 +32,9 @@ namespace Shared.Common.Dtos
 
         public string Periodicity { get; set; } = "Mensual";
         public string InstitutionType { get; set; } = "Banco";
+
+        // Solo se guarda en el historial cuando el usuario lo pide explícitamente (botón Calcular)
+        public bool Save { get; set; } = false;
     }
 
     public class AmortizationRowDto

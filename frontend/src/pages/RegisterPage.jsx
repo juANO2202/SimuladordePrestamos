@@ -44,141 +44,97 @@ export const RegisterPage = ({ onSwitchToLogin }) => {
   };
 
   return (
-    <div style={{
-      minHeight: '75vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '1.5rem'
-    }}>
-      <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '2.5rem' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{
-            display: 'inline-flex',
-            padding: '0.85rem',
-            borderRadius: '50%',
-            background: '#f1f5f9',
-            marginBottom: '1rem'
-          }}>
-            <Landmark size={32} color="#0f172a" />
-          </div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.2rem' }}>
-            Registro de Usuario
-          </h1>
-          <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
-            Crea tu cuenta para simular y guardar tus préstamos
-          </p>
+    <div className="auth-wrap">
+      <div className="card auth-card page">
+        <div className="auth-head">
+          <div className="brand-mark"><Landmark size={28} /></div>
+          <h1 className="title">Crea tu cuenta</h1>
+          <p className="subhead">Guarda tus simulaciones y consúltalas cuando quieras.</p>
         </div>
 
         {error && (
-          <div className="alert alert-error" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '700' }}>
-              <AlertCircle size={18} />
+          <div className="alert alert-error" role="alert">
+            <AlertCircle size={18} />
+            <div>
               {error}
+              {serverErrors.length > 0 && (
+                <ul>
+                  {serverErrors.map((err, i) => <li key={i}>{err}</li>)}
+                </ul>
+              )}
             </div>
-            {serverErrors.length > 0 && (
-              <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', fontSize: '0.85rem' }}>
-                {serverErrors.map((err, i) => (
-                  <li key={i}>{err}</li>
-                ))}
-              </ul>
-            )}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Nombre de Usuario</label>
-            <div style={{ position: 'relative' }}>
+            <label className="form-label" htmlFor="reg-user">Nombre de usuario</label>
+            <div className="field">
+              <User size={18} />
               <input
+                id="reg-user"
                 type="text"
-                className="form-input"
+                className="form-input with-icon"
                 placeholder="ej: juanperez"
+                autoComplete="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                style={{ paddingLeft: '2.5rem' }}
                 required
               />
-              <User size={18} color="#94a3b8" style={{ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)' }} />
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Correo Electrónico</label>
-            <div style={{ position: 'relative' }}>
+            <label className="form-label" htmlFor="reg-email">Correo electrónico</label>
+            <div className="field">
+              <Mail size={18} />
               <input
+                id="reg-email"
                 type="email"
-                className="form-input"
+                className="form-input with-icon"
                 placeholder="juan.perez@ejemplo.com"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={{ paddingLeft: '2.5rem' }}
                 required
               />
-              <Mail size={18} color="#94a3b8" style={{ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)' }} />
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Contraseña</label>
-            <div style={{ position: 'relative' }}>
+            <label className="form-label" htmlFor="reg-pass">Contraseña</label>
+            <div className="field">
+              <Lock size={18} />
               <input
+                id="reg-pass"
                 type={showPassword ? 'text' : 'password'}
-                className="form-input"
+                className="form-input with-icon with-action"
                 placeholder="Mínimo 6 caracteres"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }}
                 required
               />
-              <Lock size={18} color="#94a3b8" style={{ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)' }} />
               <button
                 type="button"
+                className="field-action"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: '0.9rem',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: '#94a3b8'
-                }}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="btn btn-primary"
-            style={{ width: '100%', marginTop: '1.25rem', padding: '0.85rem' }}
-            disabled={loading}
-          >
-            {loading ? 'Registrando...' : (
-              <>
-                <UserPlus size={18} /> Crear Cuenta
-              </>
-            )}
+          <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={loading}>
+            {loading ? 'Registrando…' : <><UserPlus size={18} /> Crear cuenta</>}
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: '1.75rem', paddingTop: '1.25rem', borderTop: '1px solid #f1f5f9', fontSize: '0.88rem', color: '#64748b' }}>
+        <div className="auth-foot">
           ¿Ya tienes cuenta?{' '}
-          <button
-            onClick={onSwitchToLogin}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#0f172a',
-              fontWeight: '700',
-              cursor: 'pointer',
-              textDecoration: 'underline'
-            }}
-          >
-            Inicia sesión aquí
+          <button type="button" className="link-button" onClick={onSwitchToLogin}>
+            Inicia sesión
           </button>
         </div>
       </div>

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Landmark, Lock, User, Eye, EyeOff, AlertCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Landmark, Lock, User, Eye, EyeOff, AlertCircle, ArrowRight, Info } from 'lucide-react';
 
-export const LoginPage = () => {
+export const LoginPage = ({ onSwitchToRegister }) => {
   const { login } = useAuth();
   const [usernameOrEmail, setUsernameOrEmail] = useState('admin');
   const [password, setPassword] = useState('password123');
@@ -33,120 +33,80 @@ export const LoginPage = () => {
   };
 
   return (
-    <div style={{
-      minHeight: '75vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '1.5rem'
-    }}>
-      <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '420px', padding: '2.5rem' }}>
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <div style={{
-            display: 'inline-flex',
-            padding: '0.85rem',
-            borderRadius: '50%',
-            background: '#f1f5f9',
-            marginBottom: '1rem'
-          }}>
-            <Landmark size={32} color="#0f172a" />
-          </div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.2rem' }}>
-            Acceso al Simulador
-          </h1>
-          <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
-            Ingresa directamente con tus credenciales
-          </p>
+    <div className="auth-wrap">
+      <div className="card auth-card page">
+        <div className="auth-head">
+          <div className="brand-mark"><Landmark size={28} /></div>
+          <h1 className="title">Bienvenido</h1>
+          <p className="subhead">Inicia sesión para simular y guardar tus créditos.</p>
         </div>
 
-        <div style={{
-          background: '#f8fafc',
-          border: '1px solid #e2e8f0',
-          borderRadius: '8px',
-          padding: '0.75rem 1rem',
-          marginBottom: '1.5rem',
-          fontSize: '0.82rem',
-          color: '#475569',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem'
-        }}>
-          <CheckCircle2 size={16} color="#0f172a" style={{ flexShrink: 0 }} />
-          <div>
-            <strong>Usuario precargado:</strong> admin<br />
-            <strong>Contraseña:</strong> password123
-          </div>
+        <div className="auth-note">
+          <Info size={16} />
+          <div>Cuenta de demostración: <strong>admin</strong> / <strong>password123</strong></div>
         </div>
 
         {error && (
-          <div className="alert alert-error">
-            <AlertCircle size={18} style={{ flexShrink: 0 }} />
+          <div className="alert alert-error" role="alert">
+            <AlertCircle size={18} />
             <div>{error}</div>
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Usuario o Correo Electrónico</label>
-            <div style={{ position: 'relative' }}>
+            <label className="form-label" htmlFor="login-user">Usuario o correo electrónico</label>
+            <div className="field">
+              <User size={18} />
               <input
+                id="login-user"
                 type="text"
-                className="form-input"
+                className="form-input with-icon"
                 placeholder="ej: admin"
+                autoComplete="username"
                 value={usernameOrEmail}
                 onChange={(e) => setUsernameOrEmail(e.target.value)}
-                style={{ paddingLeft: '2.5rem' }}
                 required
               />
-              <User size={18} color="#94a3b8" style={{ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)' }} />
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Contraseña</label>
-            <div style={{ position: 'relative' }}>
+            <label className="form-label" htmlFor="login-pass">Contraseña</label>
+            <div className="field">
+              <Lock size={18} />
               <input
+                id="login-pass"
                 type={showPassword ? 'text' : 'password'}
-                className="form-input"
+                className="form-input with-icon with-action"
                 placeholder="••••••••"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }}
                 required
               />
-              <Lock size={18} color="#94a3b8" style={{ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)' }} />
               <button
                 type="button"
+                className="field-action"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: '0.9rem',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: '#94a3b8'
-                }}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="btn btn-primary"
-            style={{ width: '100%', marginTop: '1.25rem', padding: '0.85rem' }}
-            disabled={loading}
-          >
-            {loading ? 'Ingresando...' : (
-              <>
-                Ingresar al Simulador <ArrowRight size={18} />
-              </>
-            )}
+          <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={loading}>
+            {loading ? 'Ingresando…' : <>Ingresar <ArrowRight size={18} /></>}
           </button>
         </form>
+
+        <div className="auth-foot">
+          ¿No tienes cuenta?{' '}
+          <button type="button" className="link-button" onClick={onSwitchToRegister}>
+            Regístrate
+          </button>
+        </div>
       </div>
     </div>
   );

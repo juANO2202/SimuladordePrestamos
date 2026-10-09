@@ -20,14 +20,7 @@ builder.Services.AddDbContext<SimulatorDbContext>(options =>
     }
     else
     {
-        try
-        {
-            options.UseSqlServer(connectionString);
-        }
-        catch
-        {
-            options.UseInMemoryDatabase("PrestamosDb");
-        }
+        options.UseSqlServer(connectionString);
     }
 });
 
@@ -61,7 +54,8 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(o => o.SuppressModelStateInvalidFilter = true); // los controllers devuelven ApiResponse propio
 builder.Services.AddEndpointsApiExplorer();
 
 // Documentación Swagger
@@ -111,13 +105,25 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<SimulatorDbContext>();
     try
     {
-        if (dbContext.Database.IsSqlServer())
+        // Reintentos: SQL Server puede estar arrancando o el otro servicio puede estar creando la misma base
+        for (var attempt = 1; ; attempt++)
         {
-            dbContext.Database.Migrate();
-        }
-        else
-        {
-            dbContext.Database.EnsureCreated();
+            try
+            {
+                if (dbContext.Database.IsSqlServer())
+                {
+                    dbContext.Database.Migrate();
+                }
+                else
+                {
+                    dbContext.Database.EnsureCreated();
+                }
+                break;
+            }
+            catch when (attempt < 10)
+            {
+                Thread.Sleep(3000);
+            }
         }
     }
     catch (Exception ex)
@@ -127,15 +133,12 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-if (app.Environment.IsDevelopment() || true)
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "CreditSimulator.Api v1"));
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-app.Run("http://localhost:5002");
+app.Run();

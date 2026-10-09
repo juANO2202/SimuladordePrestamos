@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../services/api';
-import { History, Calendar, Layers } from 'lucide-react';
+import { formatMoney } from '../utils/format';
+import { Calendar, Layers } from 'lucide-react';
+
+const CREDIT_NAMES = { 1: 'Consumo', 2: 'Hipotecario', 3: 'Educativo' };
 
 export const HistoryPage = () => {
   const [history, setHistory] = useState([]);
@@ -16,7 +19,7 @@ export const HistoryPage = () => {
         } else {
           setError(res.message || 'No se pudo cargar el historial.');
         }
-      } catch (err) {
+      } catch {
         setError('Error al consultar el servicio de historial.');
       } finally {
         setLoading(false);
@@ -25,83 +28,53 @@ export const HistoryPage = () => {
     fetchHistory();
   }, []);
 
-  const getCreditName = (typeCode) => {
-    switch (typeCode) {
-      case 1: return 'Consumo';
-      case 2: return 'Hipotecario';
-      case 3: return 'Educativo';
-      default: return 'Crédito';
-    }
-  };
-
-  const getMethodName = (methodCode) => {
-    return methodCode === 1 ? 'Francés (Cuota Fija)' : 'Alemán (Cuota Decreciente)';
-  };
+  const getMethodName = (methodCode) =>
+    methodCode === 1 ? 'Francés · cuota fija' : 'Alemán · cuota decreciente';
 
   return (
-    <div className="animate-fade-in" style={{ paddingBottom: '3rem' }}>
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '1.8rem', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-          <History color="#0f172a" size={26} />
-          Historial de Simulaciones
-        </h1>
-        <p style={{ color: '#64748b', fontSize: '0.95rem' }}>
-          Registro de cotizaciones y solicitudes simuladas previamente.
-        </p>
-      </div>
+    <div className="page">
+      <header className="page-header">
+        <p className="eyebrow">Mi cuenta</p>
+        <h1 className="display">Historial</h1>
+        <p className="subhead">Tus últimas 20 simulaciones guardadas.</p>
+      </header>
 
       {loading ? (
-        <div style={{ textAlign: 'center', color: '#64748b', padding: '3rem' }}>Cargando historial de simulaciones...</div>
+        <p className="subhead">Cargando historial…</p>
       ) : error ? (
-        <div className="alert alert-error">{error}</div>
+        <div className="alert alert-error" role="alert">{error}</div>
       ) : history.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-          <Layers size={44} color="#94a3b8" style={{ margin: '0 auto 1rem' }} />
-          <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#0f172a', marginBottom: '0.5rem' }}>Sin simulaciones registradas</h3>
-          <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Realiza tu primera simulación para guardarla en tu cuenta.</p>
+        <div className="card empty">
+          <Layers size={40} />
+          <h3 className="headline">Aún no tienes simulaciones</h3>
+          <p className="subhead">Calcula tu primer crédito y quedará guardado aquí.</p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+        <div className="history-grid">
           {history.map((record) => (
-            <div key={record.id} className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <span className="badge badge-dark">
-                  {getCreditName(record.creditTypeCode)}
-                </span>
-                <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <Calendar size={14} />
+            <article key={record.id} className="card history-card">
+              <div className="form-row">
+                <span className="chip accent">{CREDIT_NAMES[record.creditTypeCode] || 'Crédito'}</span>
+                <span className="caption" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <Calendar size={13} />
                   {new Date(record.simulatedAt).toLocaleDateString('es-EC')}
                 </span>
               </div>
 
-              <div style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.3rem' }}>
-                ${record.amount.toLocaleString('es-EC', { minimumFractionDigits: 2 })} USD
-              </div>
+              <div className="history-amount num">{formatMoney(record.amount)}</div>
+              <p className="caption">{getMethodName(record.method)} · {record.termMonths} meses · TEA {record.annualInterestRate}%</p>
 
-              <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1rem' }}>
-                Sistema: <strong style={{ color: '#0f172a' }}>{getMethodName(record.method)}</strong> | Plazo: <strong style={{ color: '#0f172a' }}>{record.termMonths} meses</strong>
-              </div>
-
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '0.5rem',
-                background: '#f8fafc',
-                padding: '0.75rem 1rem',
-                borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                fontSize: '0.8rem'
-              }}>
+              <div className="history-meta">
                 <div>
-                  <span style={{ color: '#64748b' }}>Cuota Inicial:</span>
-                  <div style={{ fontWeight: '700', color: '#0f172a' }}>${record.initialMonthlyPayment.toLocaleString('es-EC', { minimumFractionDigits: 2 })}</div>
+                  <span className="caption">Cuota inicial</span>
+                  <strong className="num">{formatMoney(record.initialMonthlyPayment)}</strong>
                 </div>
                 <div>
-                  <span style={{ color: '#64748b' }}>Total a Pagar:</span>
-                  <div style={{ fontWeight: '700', color: '#0f172a' }}>${record.totalAmountPaid.toLocaleString('es-EC', { minimumFractionDigits: 2 })}</div>
+                  <span className="caption">Total a pagar</span>
+                  <strong className="num">{formatMoney(record.totalAmountPaid)}</strong>
                 </div>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       )}

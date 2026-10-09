@@ -32,4 +32,4 @@ app.MapGet("/", () => Results.Ok(new
 
 app.MapReverseProxy();
 
-app.Run("http://localhost:5000");
+app.Run();

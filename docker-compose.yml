@@ -1,0 +1,78 @@
+# Levanta SQL Server + el backend completo en contenedores:  docker compose up -d --build
+#   Gateway   -> http://localhost:5000
+#   Auth      -> http://localhost:5001/swagger
+#   Simulador -> http://localhost:5002/swagger
+#   SQL Server-> localhost,1433  (usuario sa, contraseña en el archivo .env)
+# Los datos persisten en el volumen "sqldata" aunque detengas los contenedores.
+
+x-db-env: &db-env
+  ASPNETCORE_ENVIRONMENT: Development
+  UseInMemoryDatabase: "false"
+  ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=PrestamosDb;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Falta MSSQL_SA_PASSWORD en el archivo .env};TrustServerCertificate=True;"
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Falta MSSQL_SA_PASSWORD en el archivo .env}
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqldata:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\" -b -o /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+  auth:
+    build:
+      context: ./backend
+      args:
+        PROJECT: Services/Auth.Service/Auth.Api/Auth.Api.csproj
+        DLL: Auth.Api.dll
+    environment:
+      <<: *db-env
+      Urls: http://+:5001
+    ports:
+      - "5001:5001"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
+  simulator:
+    build:
+      context: ./backend
+      args:
+        PROJECT: Services/CreditSimulator.Service/CreditSimulator.Api/CreditSimulator.Api.csproj
+        DLL: CreditSimulator.Api.dll
+    environment:
+      <<: *db-env
+      Urls: http://+:5002
+    ports:
+      - "5002:5002"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
+  gateway:
+    build:
+      context: ./backend
+      args:
+        PROJECT: ApiGateway/ApiGateway.csproj
+        DLL: ApiGateway.dll
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Urls: http://+:5000
+      ReverseProxy__Clusters__authCluster__Destinations__destination1__Address: http://auth:5001
+      ReverseProxy__Clusters__simulatorCluster__Destinations__destination1__Address: http://simulator:5002
+    ports:
+      - "5000:5000"
+    depends_on:
+      - auth
+      - simulator
+
+volumes:
+  sqldata:

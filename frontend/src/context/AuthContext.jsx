@@ -27,6 +27,11 @@ export const AuthProvider = ({ children }) => {
             };
             setUser(userData);
             localStorage.setItem('simulator_user', JSON.stringify(userData));
+          } else if (res && res.status === 401) {
+            // Token inválido o vencido: limpiar la sesión guardada
+            removeAuthToken();
+            localStorage.removeItem('simulator_user');
+            setUser(null);
           }
         } catch (err) {
           console.warn('Error al verificar sesión con backend:', err);
@@ -52,17 +57,6 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       localStorage.setItem('simulator_user', JSON.stringify(userData));
       return { success: true };
-    }
-
-    // Fallback: Si el servidor está fuera de línea, permitir acceso con credenciales admin por defecto
-    if (!res || !res.success) {
-      if (usernameOrEmail === 'admin' && password === 'password123') {
-        const defaultUser = { username: 'admin', email: 'admin@banco.com' };
-        setAuthToken('demo_jwt_token_admin');
-        setUser(defaultUser);
-        localStorage.setItem('simulator_user', JSON.stringify(defaultUser));
-        return { success: true };
-      }
     }
 
     return {

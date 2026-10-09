@@ -30,6 +30,7 @@ namespace CreditSimulator.Api.Services
             var dtos = types.Select(t => new CreditTypeOptionDto
             {
                 Id = t.Id,
+                TypeCode = t.TypeCode,
                 Name = t.Name,
                 Description = t.Description,
                 AnnualInterestRate = t.AnnualInterestRate,
@@ -62,8 +63,8 @@ namespace CreditSimulator.Api.Services
 
             var result = _amortizationEngine.Calculate(request, creditType.Name, creditType.AnnualInterestRate);
 
-            // Si el usuario está autenticado, guardar en el historial
-            if (userId.HasValue && userId.Value > 0)
+            // Guardar en el historial solo si el usuario está autenticado y pidió guardar
+            if (request.Save && userId.HasValue && userId.Value > 0)
             {
                 var record = new SimulationRecord
                 {

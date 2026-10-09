@@ -3,15 +3,15 @@
     "Name": "Nuevo perfil",
     "Projects": [
       {
-        "Path": "src\\Services\\Auth.Service\\Auth.Api\\Auth.Api.csproj",
+        "Path": "backend\\Services\\Auth.Service\\Auth.Api\\Auth.Api.csproj",
         "Action": "Start"
       },
       {
-        "Path": "src\\Services\\CreditSimulator.Service\\CreditSimulator.Api\\CreditSimulator.Api.csproj",
+        "Path": "backend\\Services\\CreditSimulator.Service\\CreditSimulator.Api\\CreditSimulator.Api.csproj",
         "Action": "Start"
       },
       {
-        "Path": "src\\ApiGateway\\ApiGateway.csproj",
+        "Path": "backend\\ApiGateway\\ApiGateway.csproj",
         "Action": "Start"
       }
     ]

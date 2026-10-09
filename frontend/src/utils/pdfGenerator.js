@@ -8,8 +8,8 @@ export const generateCreditPdf = (simulationData, userName) => {
     format: 'a4'
   });
 
-  const primaryColor = [15, 23, 42];
-  const emeraldAccent = [16, 185, 129];
+  const primaryColor = [12, 12, 13];
+  const emeraldAccent = [217, 131, 31];
 
   doc.setFillColor(...primaryColor);
   doc.rect(0, 0, 210, 32, 'F');
@@ -70,7 +70,7 @@ export const generateCreditPdf = (simulationData, userName) => {
   const formattedInterest = Number(simulationData.totalInterest).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   doc.text(`Total Interés: $${formattedInterest}`, 138, currentY + 23);
 
-  doc.setTextColor(16, 185, 129);
+  doc.setTextColor(47, 158, 110);
   const formattedTotalPaid = Number(simulationData.totalAmountPaid).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   doc.text(`Total a Pagar: $${formattedTotalPaid}`, 138, currentY + 30);
 
